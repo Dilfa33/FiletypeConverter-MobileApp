@@ -7,7 +7,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.project.ui.screens.details.FileDetailsScreen
 import com.example.project.ui.screens.history.HistoryScreen
+import com.example.project.ui.screens.login.LoginScreen
 import com.example.project.ui.screens.profile.ProfileScreen
+import com.example.project.ui.screens.register.RegisterScreen
 import com.example.project.ui.screens.result.ConversionResultScreen
 import com.example.project.ui.screens.upload.UploadScreen
 
@@ -15,9 +17,29 @@ import com.example.project.ui.screens.upload.UploadScreen
 fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
     NavHost(
         navController = navController,
-        startDestination = BottomNavItem.Upload.route,
+        startDestination = AppRoutes.LOGIN,
         modifier = modifier
     ) {
+        composable(AppRoutes.LOGIN) {
+            LoginScreen(
+                onNavigateToRegister = { navController.navigate(AppRoutes.REGISTER) },
+                onLoginSuccess = {
+                    navController.navigate(BottomNavItem.Upload.route) {
+                        popUpTo(AppRoutes.LOGIN) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(AppRoutes.REGISTER) {
+            RegisterScreen(
+                onNavigateToLogin = { navController.popBackStack() },
+                onRegisterSuccess = {
+                    navController.navigate(BottomNavItem.Upload.route) {
+                        popUpTo(AppRoutes.LOGIN) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(BottomNavItem.History.route) {
             HistoryScreen(
                 onFileClick = { fileId -> navController.navigate(AppRoutes.fileDetails(fileId)) }

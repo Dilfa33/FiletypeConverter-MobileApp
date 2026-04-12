@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.project.navigation.AppRoutes
 import com.example.project.navigation.BottomNavItem
 import com.example.project.navigation.NavGraph
 import com.example.project.ui.theme.ProjectTheme
@@ -32,7 +33,8 @@ class MainActivity : ComponentActivity() {
                 )
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
-                val showBottomBar = bottomItems.any { it.route == currentRoute }
+                val authRoutes = setOf(AppRoutes.LOGIN, AppRoutes.REGISTER)
+                val showBottomBar = bottomItems.any { it.route == currentRoute } && currentRoute !in authRoutes
 
                 Scaffold(
                     bottomBar = {

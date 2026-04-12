@@ -17,6 +17,8 @@ sealed class BottomNavItem(
 }
 
 object AppRoutes {
+    const val LOGIN = "login"
+    const val REGISTER = "register"
     const val CONVERSION_RESULT = "result/{fileId}"
     const val FILE_DETAILS = "details/{fileId}"
 
