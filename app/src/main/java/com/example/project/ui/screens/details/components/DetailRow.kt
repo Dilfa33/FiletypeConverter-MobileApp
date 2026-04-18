@@ -9,12 +9,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun DetailRow(
     label: String,
     value: String,
+    valueColor: Color = Color.Unspecified,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -31,7 +33,7 @@ fun DetailRow(
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = if (valueColor == Color.Unspecified) MaterialTheme.colorScheme.onSurface else valueColor
         )
     }
     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)

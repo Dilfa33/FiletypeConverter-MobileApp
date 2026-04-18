@@ -28,18 +28,52 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.project.model.ConversionStatus
+import com.example.project.model.HardcodedData
 import com.example.project.ui.screens.details.components.DetailRow
+import com.example.project.ui.theme.ErrorRed
+import com.example.project.ui.theme.SuccessGreen
+import com.example.project.ui.theme.TextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FileDetailsScreen(
     fileId: String,
+    fileName: String,
     onBack: () -> Unit
 ) {
+    // Look up real data by fileId, fall back to fileName arg if not found
+    val file = HardcodedData.files.find { it.id == fileId }
+
+    val displayName   = file?.name           ?: fileName
+    val origFormat    = file?.originalFormat ?: "—"
+    val targetFormat  = file?.targetFormat   ?: "—"
+    val sizeMb        = file?.sizeMb?.let { "%.2f MB".format(it) } ?: "—"
+    val date          = file?.date           ?: "—"
+    val statusLabel   = when (file?.status) {
+        ConversionStatus.SUCCESS    -> "Success"
+        ConversionStatus.FAILED     -> "Failed"
+        ConversionStatus.PROCESSING -> "Processing"
+        null                        -> "—"
+    }
+    val statusColor = when (file?.status) {
+        ConversionStatus.SUCCESS    -> SuccessGreen
+        ConversionStatus.FAILED     -> ErrorRed
+        else                        -> TextSecondary
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("File Details", style = MaterialTheme.typography.titleLarge) },
+            title = {
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -77,21 +111,24 @@ fun FileDetailsScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "document.pdf",
+                        text = displayName,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
 
-            // Detail rows — stub data, will be replaced with real data from ViewModel
             Column(modifier = Modifier.fillMaxWidth()) {
-                DetailRow(label = "File Name", value = "document.pdf")
-                DetailRow(label = "Original Format", value = "DOCX")
-                DetailRow(label = "Converted Format", value = "PDF")
-                DetailRow(label = "File Size", value = "2.4 MB")
-                DetailRow(label = "Date Converted", value = "Mar 28, 2026")
-                DetailRow(label = "Status", value = "Success")
+                DetailRow(label = "File Name",         value = displayName)
+                DetailRow(label = "Original Format",   value = origFormat)
+                DetailRow(label = "Converted Format",  value = targetFormat)
+                DetailRow(label = "File Size",         value = sizeMb)
+                DetailRow(label = "Date Converted",    value = date)
+                DetailRow(
+                    label = "Status",
+                    value = statusLabel,
+                    valueColor = statusColor
+                )
             }
 
             OutlinedButton(

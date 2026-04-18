@@ -42,29 +42,37 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
         }
         composable(BottomNavItem.History.route) {
             HistoryScreen(
-                onFileClick = { fileId -> navController.navigate(AppRoutes.fileDetails(fileId)) }
+                onFileClick = { fileId, fileName ->
+                    navController.navigate(AppRoutes.fileDetails(fileId, fileName))
+                }
             )
         }
         composable(BottomNavItem.Upload.route) {
             UploadScreen(
-                onConversionComplete = { fileId -> navController.navigate(AppRoutes.conversionResult(fileId)) }
+                onConversionComplete = { fileId, fileName ->
+                    navController.navigate(AppRoutes.conversionResult(fileId, fileName))
+                }
             )
         }
         composable(BottomNavItem.Profile.route) {
             ProfileScreen()
         }
         composable(AppRoutes.CONVERSION_RESULT) { backStackEntry ->
-            val fileId = backStackEntry.arguments?.getString("fileId").orEmpty()
+            val fileId   = backStackEntry.arguments?.getString("fileId").orEmpty()
+            val fileName = backStackEntry.arguments?.getString("fileName").orEmpty()
             ConversionResultScreen(
                 fileId = fileId,
-                onViewDetails = { navController.navigate(AppRoutes.fileDetails(fileId)) },
+                fileName = fileName,
+                onViewDetails = { navController.navigate(AppRoutes.fileDetails(fileId, fileName)) },
                 onBack = { navController.popBackStack() }
             )
         }
         composable(AppRoutes.FILE_DETAILS) { backStackEntry ->
-            val fileId = backStackEntry.arguments?.getString("fileId").orEmpty()
+            val fileId   = backStackEntry.arguments?.getString("fileId").orEmpty()
+            val fileName = backStackEntry.arguments?.getString("fileName").orEmpty()
             FileDetailsScreen(
                 fileId = fileId,
+                fileName = fileName,
                 onBack = { navController.popBackStack() }
             )
         }

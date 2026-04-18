@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 data class LoginUiState(
     val email: String = "",
@@ -11,8 +12,13 @@ data class LoginUiState(
     val isPasswordVisible: Boolean = false,
     val emailError: String? = null,
     val passwordError: String? = null,
-    val isLoading: Boolean = false
-)
+    val isLoading: Boolean = false,
+    val navigateToHome: Boolean = false
+) {
+    // Derived state — recomposition triggers correctly because it lives inside the state class
+    val isLoginEnabled: Boolean
+        get() = email.isNotBlank() && password.isNotBlank()
+}
 
 data class RegisterUiState(
     val username: String = "",
@@ -25,8 +31,14 @@ data class RegisterUiState(
     val emailError: String? = null,
     val passwordError: String? = null,
     val confirmPasswordError: String? = null,
-    val isLoading: Boolean = false
-)
+    val isLoading: Boolean = false,
+    val navigateToHome: Boolean = false
+) {
+    // Derived state — same principle
+    val isRegisterEnabled: Boolean
+        get() = username.isNotBlank() && email.isNotBlank() &&
+                password.isNotBlank() && confirmPassword.isNotBlank()
+}
 
 class AuthViewModel : ViewModel() {
 
@@ -36,20 +48,18 @@ class AuthViewModel : ViewModel() {
     private val _registerState = MutableStateFlow(RegisterUiState())
     val registerState: StateFlow<RegisterUiState> = _registerState.asStateFlow()
 
-    // --- Login ---
+    // ── Login ─────────────────────────────────────────────────────────────────
 
     fun onLoginEmailChange(value: String) {
-        _loginState.value = _loginState.value.copy(email = value, emailError = null)
+        _loginState.update { it.copy(email = value, emailError = null) }
     }
 
     fun onLoginPasswordChange(value: String) {
-        _loginState.value = _loginState.value.copy(password = value, passwordError = null)
+        _loginState.update { it.copy(password = value, passwordError = null) }
     }
 
     fun onLoginPasswordVisibilityToggle() {
-        _loginState.value = _loginState.value.copy(
-            isPasswordVisible = !_loginState.value.isPasswordVisible
-        )
+        _loginState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
     }
 
     fun onLoginClick() {
@@ -57,51 +67,55 @@ class AuthViewModel : ViewModel() {
         var emailError: String? = null
         var passwordError: String? = null
 
-        if (state.email.isBlank()) emailError = "Email cannot be empty"
+        if (state.email.isBlank())
+            emailError = "Email cannot be empty"
         else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches())
             emailError = "Enter a valid email"
 
-        if (state.password.isBlank()) passwordError = "Password cannot be empty"
-        else if (state.password.length < 6) passwordError = "Password must be at least 6 characters"
+        if (state.password.isBlank())
+            passwordError = "Password cannot be empty"
+        else if (state.password.length < 6)
+            passwordError = "Password must be at least 6 characters"
 
-        _loginState.value = state.copy(emailError = emailError, passwordError = passwordError)
-
-        if (emailError == null && passwordError == null) {
-            // TODO: implement actual login
+        // ViewModel decides whether to navigate — not the UI
+        val success = emailError == null && passwordError == null
+        _loginState.update {
+            it.copy(
+                emailError = emailError,
+                passwordError = passwordError,
+                navigateToHome = success
+            )
         }
     }
 
-    val isLoginEnabled: Boolean
-        get() = _loginState.value.email.isNotBlank() && _loginState.value.password.isNotBlank()
+    fun onLoginNavigationHandled() {
+        _loginState.update { it.copy(navigateToHome = false) }
+    }
 
-    // --- Register ---
+    // ── Register ──────────────────────────────────────────────────────────────
 
     fun onRegisterUsernameChange(value: String) {
-        _registerState.value = _registerState.value.copy(username = value, usernameError = null)
+        _registerState.update { it.copy(username = value, usernameError = null) }
     }
 
     fun onRegisterEmailChange(value: String) {
-        _registerState.value = _registerState.value.copy(email = value, emailError = null)
+        _registerState.update { it.copy(email = value, emailError = null) }
     }
 
     fun onRegisterPasswordChange(value: String) {
-        _registerState.value = _registerState.value.copy(password = value, passwordError = null)
+        _registerState.update { it.copy(password = value, passwordError = null) }
     }
 
     fun onRegisterConfirmPasswordChange(value: String) {
-        _registerState.value = _registerState.value.copy(confirmPassword = value, confirmPasswordError = null)
+        _registerState.update { it.copy(confirmPassword = value, confirmPasswordError = null) }
     }
 
     fun onRegisterPasswordVisibilityToggle() {
-        _registerState.value = _registerState.value.copy(
-            isPasswordVisible = !_registerState.value.isPasswordVisible
-        )
+        _registerState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
     }
 
     fun onRegisterConfirmPasswordVisibilityToggle() {
-        _registerState.value = _registerState.value.copy(
-            isConfirmPasswordVisible = !_registerState.value.isConfirmPasswordVisible
-        )
+        _registerState.update { it.copy(isConfirmPasswordVisible = !it.isConfirmPasswordVisible) }
     }
 
     fun onRegisterClick() {
@@ -111,28 +125,34 @@ class AuthViewModel : ViewModel() {
         var passwordError: String? = null
         var confirmPasswordError: String? = null
 
-        if (state.username.isBlank()) usernameError = "Username cannot be empty"
-        if (state.email.isBlank()) emailError = "Email cannot be empty"
+        if (state.username.isBlank())
+            usernameError = "Username cannot be empty"
+        if (state.email.isBlank())
+            emailError = "Email cannot be empty"
         else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches())
             emailError = "Enter a valid email"
-        if (state.password.isBlank()) passwordError = "Password cannot be empty"
-        else if (state.password.length < 6) passwordError = "Password must be at least 6 characters"
-        if (state.confirmPassword != state.password) confirmPasswordError = "Passwords do not match"
+        if (state.password.isBlank())
+            passwordError = "Password cannot be empty"
+        else if (state.password.length < 6)
+            passwordError = "Password must be at least 6 characters"
+        if (state.confirmPassword != state.password)
+            confirmPasswordError = "Passwords do not match"
 
-        _registerState.value = state.copy(
-            usernameError = usernameError,
-            emailError = emailError,
-            passwordError = passwordError,
-            confirmPasswordError = confirmPasswordError
-        )
+        val success = usernameError == null && emailError == null &&
+                passwordError == null && confirmPasswordError == null
 
-        if (usernameError == null && emailError == null && passwordError == null && confirmPasswordError == null) {
-            // TODO: implement actual registration
+        _registerState.update {
+            it.copy(
+                usernameError = usernameError,
+                emailError = emailError,
+                passwordError = passwordError,
+                confirmPasswordError = confirmPasswordError,
+                navigateToHome = success
+            )
         }
     }
 
-    val isRegisterEnabled: Boolean
-        get() = _registerState.value.run {
-            username.isNotBlank() && email.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank()
-        }
+    fun onRegisterNavigationHandled() {
+        _registerState.update { it.copy(navigateToHome = false) }
+    }
 }

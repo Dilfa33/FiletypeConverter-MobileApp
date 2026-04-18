@@ -1,6 +1,7 @@
 package com.example.project.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.example.project.model.HardcodedData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +17,7 @@ class UploadViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(UploadUiState())
     val uiState: StateFlow<UploadUiState> = _uiState.asStateFlow()
 
-    val supportedFormats = listOf("PDF", "DOCX", "PNG", "JPG", "TXT", "MP4", "MP3")
+    val supportedFormats = HardcodedData.supportedFormats
 
     fun onFileSelected(name: String) {
         _uiState.value = _uiState.value.copy(selectedFileName = name)

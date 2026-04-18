@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -28,6 +29,14 @@ fun RegisterScreen(
 ) {
     val state by viewModel.registerState.collectAsState()
 
+    // UI reacts to state change — navigation is triggered by ViewModel, not by button click
+    LaunchedEffect(state.navigateToHome) {
+        if (state.navigateToHome) {
+            viewModel.onRegisterNavigationHandled()
+            onRegisterSuccess()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -44,7 +53,6 @@ fun RegisterScreen(
                 color = LightBlue
             )
         )
-
         Text(
             text = "Convert anything, anywhere.",
             style = MaterialTheme.typography.bodyMedium,
@@ -58,7 +66,6 @@ fun RegisterScreen(
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
             modifier = Modifier.align(Alignment.Start)
         )
-
         Text(
             text = "Join to start converting files",
             style = MaterialTheme.typography.bodyMedium,
@@ -106,13 +113,10 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // Button only triggers ViewModel — ViewModel decides navigation via state
         RegisterButton(
-            onClick = {
-                viewModel.onRegisterClick()
-                // TODO: navigate on success once real auth is wired up
-                onRegisterSuccess()
-            },
-            enabled = viewModel.isRegisterEnabled
+            onClick = viewModel::onRegisterClick,
+            enabled = state.isRegisterEnabled
         )
 
         Spacer(modifier = Modifier.height(24.dp))

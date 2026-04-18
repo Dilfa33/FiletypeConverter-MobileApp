@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -27,6 +28,14 @@ fun LoginScreen(
 ) {
     val state by viewModel.loginState.collectAsState()
 
+    // UI reacts to state change — navigation is triggered by ViewModel, not by button click
+    LaunchedEffect(state.navigateToHome) {
+        if (state.navigateToHome) {
+            viewModel.onLoginNavigationHandled()
+            onLoginSuccess()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -43,7 +52,6 @@ fun LoginScreen(
                 color = LightBlue
             )
         )
-
         Text(
             text = "Convert anything, anywhere.",
             style = MaterialTheme.typography.bodyMedium,
@@ -57,7 +65,6 @@ fun LoginScreen(
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
             modifier = Modifier.align(Alignment.Start)
         )
-
         Text(
             text = "Sign in to continue",
             style = MaterialTheme.typography.bodyMedium,
@@ -94,13 +101,10 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Button only triggers ViewModel — ViewModel decides navigation via state
         LoginButton(
-            onClick = {
-                viewModel.onLoginClick()
-                // TODO: navigate on success once real auth is wired up
-                onLoginSuccess()
-            },
-            enabled = viewModel.isLoginEnabled
+            onClick = viewModel::onLoginClick,
+            enabled = state.isLoginEnabled
         )
 
         Spacer(modifier = Modifier.height(24.dp))

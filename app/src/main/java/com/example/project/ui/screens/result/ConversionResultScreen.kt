@@ -22,15 +22,20 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.project.model.HardcodedData
 import com.example.project.ui.screens.result.components.ResultCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversionResultScreen(
     fileId: String,
+    fileName: String,
     onViewDetails: () -> Unit,
     onBack: () -> Unit
 ) {
+    // Look up real data by fileId, fall back to stub if not found
+    val file = HardcodedData.files.find { it.id == fileId }
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Result", style = MaterialTheme.typography.titleLarge) },
@@ -52,12 +57,11 @@ fun ConversionResultScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Stub data — will be replaced with real data from ViewModel
             ResultCard(
-                fileName = "document.pdf",
-                originalFormat = "DOCX",
-                targetFormat = "PDF",
-                sizeMb = 2.4f
+                fileName = file?.name ?: fileName,
+                originalFormat = file?.originalFormat ?: "—",
+                targetFormat = file?.targetFormat ?: "—",
+                sizeMb = file?.sizeMb ?: 0f
             )
 
             Spacer(modifier = Modifier.weight(1f))
