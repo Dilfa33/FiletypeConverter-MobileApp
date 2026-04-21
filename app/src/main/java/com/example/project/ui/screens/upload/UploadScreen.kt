@@ -23,7 +23,7 @@ import com.example.project.viewmodel.UploadViewModel
 
 @Composable
 fun UploadScreen(
-    onConversionComplete: (String) -> Unit,
+    onConversionComplete: (fileId: String, fileName: String) -> Unit,
     viewModel: UploadViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -70,7 +70,7 @@ fun UploadScreen(
         Button(
             onClick = {
                 viewModel.onConvertClick()
-                onConversionComplete("stub-id")
+                onConversionComplete("stub-id", uiState.selectedFileName ?: "file")
             },
             enabled = uiState.selectedFileName != null,
             modifier = Modifier
