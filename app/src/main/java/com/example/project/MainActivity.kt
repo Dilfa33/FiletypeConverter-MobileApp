@@ -18,7 +18,9 @@ import com.example.project.navigation.AppRoutes
 import com.example.project.navigation.BottomNavItem
 import com.example.project.navigation.NavGraph
 import com.example.project.ui.theme.ProjectTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
