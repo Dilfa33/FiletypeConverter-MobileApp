@@ -29,6 +29,9 @@ interface FileDao {
     @Query("DELETE FROM files WHERE id = :id")
     suspend fun deleteById(id: String)
 
+    @Query("DELETE FROM files WHERE userId = :userId")
+    suspend fun deleteAllByUser(userId: String)
+
     @Transaction
     @Query("SELECT * FROM files WHERE id = :id")
     suspend fun getFileWithTags(id: String): FileWithTags?

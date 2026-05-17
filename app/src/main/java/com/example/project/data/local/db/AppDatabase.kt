@@ -2,10 +2,8 @@ package com.example.project.data.local.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import com.example.project.data.local.dao.*
 import com.example.project.data.local.entity.*
-import com.example.project.data.local.util.Converters
 
 @Database(
     entities = [
@@ -16,10 +14,9 @@ import com.example.project.data.local.util.Converters
         FileTagEntity::class,
         FileTagCrossRef::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
-@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun fileDao(): FileDao

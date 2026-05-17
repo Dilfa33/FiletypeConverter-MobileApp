@@ -28,4 +28,7 @@ class FileRepositoryImpl @Inject constructor(
 
     override suspend fun deleteFile(id: String) =
         fileDao.deleteById(id)
+
+    override suspend fun deleteAllByUser(userId: String) =
+        fileDao.deleteAllByUser(userId)
 }

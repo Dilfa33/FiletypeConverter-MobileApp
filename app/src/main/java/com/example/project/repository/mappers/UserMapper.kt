@@ -6,14 +6,16 @@ import com.example.project.model.User
 object UserMapper {
 
     fun toDomain(entity: UserEntity): User = User(
-        id       = entity.id,
-        username = entity.username,
-        email    = entity.email
+        id           = entity.id,
+        username     = entity.username,
+        email        = entity.email,
+        passwordHash = entity.passwordHash
     )
 
     fun toEntity(domain: User): UserEntity = UserEntity(
-        id       = domain.id,
-        username = domain.username,
-        email    = domain.email
+        id           = domain.id,
+        username     = domain.username,
+        email        = domain.email,
+        passwordHash = domain.passwordHash
     )
 }

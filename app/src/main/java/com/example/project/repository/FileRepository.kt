@@ -10,4 +10,5 @@ interface FileRepository {
     suspend fun insertFile(file: FileItem, userId: String)
     suspend fun updateFile(file: FileItem, userId: String)
     suspend fun deleteFile(id: String)
+    suspend fun deleteAllByUser(userId: String)
 }

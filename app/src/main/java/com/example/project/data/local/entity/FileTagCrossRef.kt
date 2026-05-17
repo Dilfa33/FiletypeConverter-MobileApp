@@ -1,5 +1,6 @@
 package com.example.project.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 
 // Junction table — Many-to-Many between FileEntity and FileTagEntity
@@ -9,5 +10,5 @@ import androidx.room.Entity
 )
 data class FileTagCrossRef(
     val fileId: String,
-    val tagId: Int
+    @ColumnInfo(index = true) val tagId: Int
 )

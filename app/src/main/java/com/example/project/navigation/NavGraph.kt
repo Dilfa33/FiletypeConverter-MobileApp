@@ -58,20 +58,19 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
             ProfileScreen()
         }
         composable(AppRoutes.CONVERSION_RESULT) { backStackEntry ->
-            val fileId   = backStackEntry.arguments?.getString("fileId").orEmpty()
             val fileName = backStackEntry.arguments?.getString("fileName").orEmpty()
             ConversionResultScreen(
-                fileId = fileId,
                 fileName = fileName,
-                onViewDetails = { navController.navigate(AppRoutes.fileDetails(fileId, fileName)) },
+                onViewDetails = {
+                    val fileId = backStackEntry.arguments?.getString("fileId").orEmpty()
+                    navController.navigate(AppRoutes.fileDetails(fileId, fileName))
+                },
                 onBack = { navController.popBackStack() }
             )
         }
         composable(AppRoutes.FILE_DETAILS) { backStackEntry ->
-            val fileId   = backStackEntry.arguments?.getString("fileId").orEmpty()
             val fileName = backStackEntry.arguments?.getString("fileName").orEmpty()
             FileDetailsScreen(
-                fileId = fileId,
                 fileName = fileName,
                 onBack = { navController.popBackStack() }
             )
