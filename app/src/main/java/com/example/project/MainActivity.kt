@@ -12,17 +12,29 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.project.data.local.util.DatabaseSeeder
 import com.example.project.navigation.AppRoutes
 import com.example.project.navigation.BottomNavItem
 import com.example.project.navigation.NavGraph
 import com.example.project.ui.theme.ProjectTheme
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var databaseSeeder: DatabaseSeeder
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        lifecycleScope.launch { databaseSeeder.seedIfEmpty() }
+
         setContent {
             ProjectTheme {
                 val navController = rememberNavController()

@@ -12,7 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.project.ui.screens.register.components.RegisterButton
 import com.example.project.ui.screens.register.components.RegisterEmailField
 import com.example.project.ui.screens.register.components.RegisterPasswordField
@@ -25,7 +25,7 @@ import com.example.project.viewmodel.AuthViewModel
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     onRegisterSuccess: () -> Unit,
-    viewModel: AuthViewModel = viewModel()
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     val state by viewModel.registerState.collectAsState()
 
