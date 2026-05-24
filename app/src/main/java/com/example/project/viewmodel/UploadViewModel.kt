@@ -2,12 +2,14 @@ package com.example.project.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.project.data.remote.dto.CreateConversionDto
 import com.example.project.di.SessionManager
 import com.example.project.model.ConversionStatus
 import com.example.project.model.FileItem
 import com.example.project.model.HardcodedData
 import com.example.project.repository.FileRepository
 import com.example.project.repository.FormatRepository
+import com.example.project.repository.NetworkConversionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +38,8 @@ sealed interface UploadUiState {
 class UploadViewModel @Inject constructor(
     private val fileRepository: FileRepository,
     private val formatRepository: FormatRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val networkRepository: NetworkConversionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UploadUiState>(UploadUiState.Init)
@@ -93,6 +96,21 @@ class UploadViewModel @Inject constructor(
                     status = ConversionStatus.SUCCESS
                 )
                 fileRepository.insertFile(file, sessionManager.currentUserId)
+
+                // POST to remote API — fire and forget, don't fail the flow if network is down
+                try {
+                    networkRepository.createConversion(
+                        CreateConversionDto(
+                            name           = fileName,
+                            originalFormat = originalFormat,
+                            targetFormat   = current.selectedFormat,
+                            sizeMb         = file.sizeMb,
+                            date           = file.date,
+                            status         = "SUCCESS"
+                        )
+                    )
+                } catch (_: Exception) { /* network unavailable — Room already saved */ }
+
                 _uiState.value = current.copy(isConverting = false, savedFileId = fileId)
             } catch (e: Exception) {
                 _uiState.value = UploadUiState.Error(e.message ?: "Conversion failed")

@@ -6,6 +6,7 @@ import com.example.project.di.SessionManager
 import com.example.project.model.ConversionStatus
 import com.example.project.model.FileItem
 import com.example.project.repository.FileRepository
+import com.example.project.repository.NetworkConversionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,14 +45,25 @@ sealed interface HistoryUiState {
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val fileRepository: FileRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val networkRepository: NetworkConversionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HistoryUiState>(HistoryUiState.Init)
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
     init {
+        syncFromNetwork()
         loadFiles()
+    }
+
+    private fun syncFromNetwork() {
+        viewModelScope.launch {
+            try {
+                // Pull remote list — just a best-effort sync, no crash if offline
+                networkRepository.getConversions()
+            } catch (_: Exception) { /* offline — Room data is the fallback */ }
+        }
     }
 
     private fun loadFiles() {
