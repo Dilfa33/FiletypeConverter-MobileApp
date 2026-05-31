@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew assembleDebug)"
+      "Bash(./gradlew assembleDebug)",
+      "Bash(find \"C:/Users/Dilfa/Downloads/MobileProgramming-2026-main\" -type f | grep -v \".kt\" | grep -v \".idea\" | grep -v \".gradle\" | grep -v \".xml\" | grep -v \".class\" | sort)"
     ]
   }
 }

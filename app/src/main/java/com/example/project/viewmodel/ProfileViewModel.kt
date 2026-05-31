@@ -6,6 +6,7 @@ import com.example.project.di.SessionManager
 import com.example.project.model.ConversionStatus
 import com.example.project.model.FileItem
 import com.example.project.model.User
+import com.example.project.repository.AuthRepository
 import com.example.project.repository.FileRepository
 import com.example.project.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,7 +23,8 @@ sealed interface ProfileUiState {
         val username: String,
         val email: String,
         val files: List<FileItem>,
-        val notificationsEnabled: Boolean = true
+        val notificationsEnabled: Boolean = true,
+        val photoUrl: String? = null
     ) : ProfileUiState {
         val totalConversions: Int get() = files.size
         val successRate: Int
@@ -38,7 +40,8 @@ sealed interface ProfileUiState {
 class ProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val fileRepository: FileRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Init)
@@ -52,12 +55,14 @@ class ProfileViewModel @Inject constructor(
             try {
                 val user = userRepository.getUserById(sessionManager.currentUserId)
                     ?: User(id = "user-1", username = "John Doe", email = "john@example.com")
+                val photoUrl = user.photoUrl ?: authRepository.getPhotoUrl()
                 fileRepository.getFilesByUser(user.id).collect { files ->
                     _uiState.value = ProfileUiState.Success(
-                        username              = user.username,
-                        email                 = user.email,
-                        files                 = files,
-                        notificationsEnabled  = sessionManager.notificationsEnabled
+                        username             = user.username,
+                        email                = user.email,
+                        files                = files,
+                        notificationsEnabled = sessionManager.notificationsEnabled,
+                        photoUrl             = photoUrl
                     )
                 }
             } catch (e: Exception) {
@@ -90,5 +95,10 @@ class ProfileViewModel @Inject constructor(
         sessionManager.notificationsEnabled = !sessionManager.notificationsEnabled
         val current = _uiState.value as? ProfileUiState.Success ?: return
         _uiState.value = current.copy(notificationsEnabled = sessionManager.notificationsEnabled)
+    }
+
+    fun logout() {
+        authRepository.logout()
+        sessionManager.currentUserId = ""
     }
 }

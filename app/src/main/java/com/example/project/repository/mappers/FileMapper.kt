@@ -18,7 +18,8 @@ object FileMapper {
         targetFormat   = entity.targetFormat,
         sizeMb         = entity.sizeMb,
         date           = dateFormat.format(Date(entity.convertedAt)),
-        status         = ConversionStatus.valueOf(entity.status)
+        status         = ConversionStatus.valueOf(entity.status),
+        outputPath     = entity.outputPath
     )
 
     fun toEntity(domain: FileItem, userId: String): FileEntity = FileEntity(
@@ -29,6 +30,7 @@ object FileMapper {
         sizeMb         = domain.sizeMb,
         convertedAt    = System.currentTimeMillis(),
         status         = domain.status.name,
-        userId         = userId
+        userId         = userId,
+        outputPath     = domain.outputPath
     )
 }

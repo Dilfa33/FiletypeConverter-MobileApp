@@ -2,18 +2,16 @@ package com.example.project.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.project.data.local.util.sha256
 import com.example.project.di.SessionManager
 import com.example.project.model.User
+import com.example.project.repository.AuthRepository
 import com.example.project.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
 
 data class LoginUiState(
@@ -26,12 +24,10 @@ data class LoginUiState(
     val navigateToHome: Boolean = false,
     val showForgotDialog: Boolean = false,
     val forgotEmail: String = "",
-    val forgotNewPassword: String = "",
     val forgotError: String? = null,
     val forgotSuccess: Boolean = false
 ) {
-    val isLoginEnabled: Boolean
-        get() = email.isNotBlank() && password.isNotBlank()
+    val isLoginEnabled: Boolean get() = email.isNotBlank() && password.isNotBlank()
 }
 
 data class RegisterUiState(
@@ -55,6 +51,7 @@ data class RegisterUiState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
@@ -98,20 +95,14 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _loginState.update { it.copy(isLoading = true) }
             try {
-                val users = userRepository.getAllUsers().first()
-                val user = users.find { it.email == state.email }
-                when {
-                    user == null ->
-                        _loginState.update { it.copy(isLoading = false, emailError = "No account found with this email") }
-                    user.passwordHash != state.password.sha256() ->
-                        _loginState.update { it.copy(isLoading = false, passwordError = "Incorrect password") }
-                    else -> {
-                        sessionManager.currentUserId = user.id
-                        _loginState.update { it.copy(isLoading = false, navigateToHome = true) }
-                    }
-                }
+                authRepository.login(state.email, state.password)
+                val uid = authRepository.getCurrentUserId() ?: ""
+                sessionManager.currentUserId = uid
+                _loginState.update { it.copy(isLoading = false, navigateToHome = true) }
             } catch (e: Exception) {
-                _loginState.update { it.copy(isLoading = false, emailError = "Login failed, please try again") }
+                _loginState.update {
+                    it.copy(isLoading = false, passwordError = e.message ?: "Login failed")
+                }
             }
         }
     }
@@ -119,38 +110,71 @@ class AuthViewModel @Inject constructor(
     fun onLoginNavigationHandled() =
         _loginState.update { it.copy(navigateToHome = false) }
 
+    fun onGoogleSignIn(idToken: String, displayName: String?, email: String?) {
+        viewModelScope.launch {
+            _loginState.update { it.copy(isLoading = true) }
+            try {
+                authRepository.signInWithGoogle(idToken)
+                val uid = authRepository.getCurrentUserId() ?: ""
+                sessionManager.currentUserId = uid
+
+                // Save / update Google profile in Room
+                val photoUrl = authRepository.getPhotoUrl()
+                val existing = userRepository.getUserById(uid)
+                if (existing == null) {
+                    userRepository.insertUser(
+                        User(
+                            id           = uid,
+                            username     = displayName ?: "Google User",
+                            email        = email ?: "",
+                            passwordHash = "",
+                            photoUrl     = photoUrl
+                        )
+                    )
+                } else {
+                    userRepository.updateUser(
+                        existing.copy(
+                            username = displayName ?: existing.username,
+                            email    = email ?: existing.email,
+                            photoUrl = photoUrl ?: existing.photoUrl
+                        )
+                    )
+                }
+
+                _loginState.update { it.copy(isLoading = false, navigateToHome = true) }
+            } catch (e: Exception) {
+                _loginState.update {
+                    it.copy(isLoading = false, passwordError = e.message ?: "Google sign-in failed")
+                }
+            }
+        }
+    }
+
     // ── Forgot password ───────────────────────────────────────────────────────
 
     fun onForgotPasswordOpen() =
         _loginState.update { it.copy(showForgotDialog = true, forgotError = null, forgotSuccess = false) }
 
     fun onForgotPasswordDismiss() =
-        _loginState.update { it.copy(showForgotDialog = false, forgotEmail = "", forgotNewPassword = "", forgotError = null) }
+        _loginState.update { it.copy(showForgotDialog = false, forgotEmail = "", forgotError = null) }
 
     fun onForgotEmailChange(value: String) =
         _loginState.update { it.copy(forgotEmail = value, forgotError = null) }
 
-    fun onForgotNewPasswordChange(value: String) =
-        _loginState.update { it.copy(forgotNewPassword = value) }
-
     fun onForgotPasswordSubmit() {
         val state = _loginState.value
-        if (state.forgotEmail.isBlank() || state.forgotNewPassword.length < 6) {
-            _loginState.update { it.copy(forgotError = "Enter a valid email and a password (min 6 chars)") }
+        if (state.forgotEmail.isBlank()) {
+            _loginState.update { it.copy(forgotError = "Enter your email address") }
             return
         }
         viewModelScope.launch {
             try {
-                val users = userRepository.getAllUsers().first()
-                val user = users.find { it.email == state.forgotEmail }
-                if (user == null) {
-                    _loginState.update { it.copy(forgotError = "No account found with this email") }
-                } else {
-                    userRepository.updateUser(user.copy(passwordHash = state.forgotNewPassword.sha256()))
-                    _loginState.update { it.copy(showForgotDialog = false, forgotEmail = "", forgotNewPassword = "", forgotSuccess = true) }
+                authRepository.sendPasswordResetEmail(state.forgotEmail)
+                _loginState.update {
+                    it.copy(showForgotDialog = false, forgotEmail = "", forgotSuccess = true)
                 }
             } catch (e: Exception) {
-                _loginState.update { it.copy(forgotError = "Failed to reset password") }
+                _loginState.update { it.copy(forgotError = e.message ?: "Failed to send reset email") }
             }
         }
     }
@@ -192,8 +216,10 @@ class AuthViewModel @Inject constructor(
 
         if (usernameError != null || emailError != null || passwordError != null || confirmPasswordError != null) {
             _registerState.update {
-                it.copy(usernameError = usernameError, emailError = emailError,
-                    passwordError = passwordError, confirmPasswordError = confirmPasswordError)
+                it.copy(
+                    usernameError = usernameError, emailError = emailError,
+                    passwordError = passwordError, confirmPasswordError = confirmPasswordError
+                )
             }
             return
         }
@@ -201,17 +227,18 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _registerState.update { it.copy(isLoading = true) }
             try {
-                val newUser = User(
-                    id           = UUID.randomUUID().toString(),
-                    username     = state.username,
-                    email        = state.email,
-                    passwordHash = state.password.sha256()
+                authRepository.register(state.email, state.password)
+                val uid = authRepository.getCurrentUserId() ?: ""
+                // Save username + email to local Room using Firebase UID as key
+                userRepository.insertUser(
+                    User(id = uid, username = state.username, email = state.email, passwordHash = "")
                 )
-                userRepository.insertUser(newUser)
-                sessionManager.currentUserId = newUser.id
+                sessionManager.currentUserId = uid
                 _registerState.update { it.copy(isLoading = false, navigateToHome = true) }
             } catch (e: Exception) {
-                _registerState.update { it.copy(isLoading = false, emailError = "Registration failed, please try again") }
+                _registerState.update {
+                    it.copy(isLoading = false, emailError = e.message ?: "Registration failed")
+                }
             }
         }
     }

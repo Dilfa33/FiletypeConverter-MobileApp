@@ -44,7 +44,7 @@ fun UploadScreen(onConversionComplete: (fileId: String, fileName: String) -> Uni
 
     UploadContent(
         uiState = uiState,
-        onFileSelected = viewModel::onFileSelected,
+        onFileSelected = { uri, name -> viewModel.onFileSelected(uri, name) },
         onFormatSelected = viewModel::onFormatSelected,
         onConvertClick = viewModel::onConvertClick
     )
@@ -54,7 +54,7 @@ fun UploadScreen(onConversionComplete: (fileId: String, fileName: String) -> Uni
 @Composable
 private fun UploadContent(
     uiState: UploadUiState,
-    onFileSelected: (String) -> Unit,
+    onFileSelected: (android.net.Uri, String) -> Unit,
     onFormatSelected: (String) -> Unit,
     onConvertClick: () -> Unit
 ) {

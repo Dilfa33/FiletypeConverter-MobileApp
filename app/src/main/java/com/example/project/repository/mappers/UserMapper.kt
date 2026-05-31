@@ -9,13 +9,15 @@ object UserMapper {
         id           = entity.id,
         username     = entity.username,
         email        = entity.email,
-        passwordHash = entity.passwordHash
+        passwordHash = entity.passwordHash,
+        photoUrl     = entity.photoUrl
     )
 
     fun toEntity(domain: User): UserEntity = UserEntity(
         id           = domain.id,
         username     = domain.username,
         email        = domain.email,
-        passwordHash = domain.passwordHash
+        passwordHash = domain.passwordHash,
+        photoUrl     = domain.photoUrl
     )
 }

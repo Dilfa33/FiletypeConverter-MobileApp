@@ -36,8 +36,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.project.ui.screens.profile.components.ProfileHeader
 import com.example.project.ui.screens.profile.components.RecentFileItem
 import com.example.project.ui.screens.profile.components.StatCard
@@ -48,14 +51,25 @@ import com.example.project.viewmodel.ProfileViewModel
 
 // Stateful
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(onLogout: () -> Unit) {
     val viewModel: ProfileViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
     ProfileContent(
         uiState               = uiState,
         onUpdateUsername      = viewModel::updateUsername,
         onClearHistory        = viewModel::clearHistory,
-        onToggleNotifications = viewModel::toggleNotifications
+        onToggleNotifications = viewModel::toggleNotifications,
+        onLogout              = {
+            // Sign out from Google so account picker shows next time
+            GoogleSignIn.getClient(
+                context,
+                GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
+            ).signOut()
+            viewModel.logout()
+            onLogout()
+        }
     )
 }
 
@@ -66,7 +80,8 @@ private fun ProfileContent(
     uiState: ProfileUiState,
     onUpdateUsername: (String) -> Unit,
     onClearHistory: () -> Unit,
-    onToggleNotifications: () -> Unit
+    onToggleNotifications: () -> Unit,
+    onLogout: () -> Unit
 ) {
     var showEditDialog by remember { mutableStateOf(false) }
     var showNotifDialog by remember { mutableStateOf(false) }
@@ -170,8 +185,9 @@ private fun ProfileContent(
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                         ProfileHeader(
-                            name = uiState.username,
-                            email = uiState.email,
+                            name     = uiState.username,
+                            email    = uiState.email,
+                            photoUrl = uiState.photoUrl,
                             modifier = Modifier.padding(horizontal = 20.dp)
                         )
                         Spacer(modifier = Modifier.height(20.dp))
@@ -237,6 +253,14 @@ private fun ProfileContent(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) { Text("Storage & Data", color = MaterialTheme.colorScheme.onSurface) }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    item {
+                        Button(
+                            onClick = onLogout,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) { Text("Logout", color = MaterialTheme.colorScheme.onError) }
                     }
                 }
             }

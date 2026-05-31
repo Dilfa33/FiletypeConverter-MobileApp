@@ -24,5 +24,6 @@ data class FileEntity(
     val sizeMb: Float,
     val convertedAt: Long,
     val status: String,           // "SUCCESS" | "FAILED" | "PROCESSING"
-    @ColumnInfo(index = true) val userId: String
+    @ColumnInfo(index = true) val userId: String,
+    val outputPath: String? = null
 )
