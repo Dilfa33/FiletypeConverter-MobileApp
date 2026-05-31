@@ -11,15 +11,16 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    // Replace with your MockAPI.io URL, e.g.:
-    // https://67abc123def.mockapi.io/api/v1/
-    private const val BASE_URL = "https://682e3e34395f2df5b9cce9eb.mockapi.io/api/v1/"
+    // Emulator → 10.0.2.2 maps to your PC's localhost
+    // Physical device on same Wi-Fi → replace with your PC's LAN IP, e.g. http://192.168.1.5:8000/
+    private const val BASE_URL = "http://10.0.2.2:8000/"
 
     @Provides
     @Singleton
@@ -31,6 +32,9 @@ object NetworkModule {
     fun provideOkHttpClient(logging: HttpLoggingInterceptor): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(logging)
+            .connectTimeout(5, TimeUnit.SECONDS)   // Fail fast if backend is offline
+            .readTimeout(120, TimeUnit.SECONDS)
+            .writeTimeout(120, TimeUnit.SECONDS)
             .build()
 
     @Provides

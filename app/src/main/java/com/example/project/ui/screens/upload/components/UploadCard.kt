@@ -1,5 +1,6 @@
 package com.example.project.ui.screens.upload.components
 
+import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,7 +31,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun UploadCard(
     selectedFileName: String?,
-    onFileSelected: (String) -> Unit,
+    onFileSelected: (Uri, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -41,7 +42,7 @@ fun UploadCard(
             cursor.moveToFirst()
             if (nameIndex >= 0) cursor.getString(nameIndex) else null
         } ?: uri.lastPathSegment ?: "selected_file"
-        onFileSelected(fileName)
+        onFileSelected(uri, fileName)
     }
 
     OutlinedCard(

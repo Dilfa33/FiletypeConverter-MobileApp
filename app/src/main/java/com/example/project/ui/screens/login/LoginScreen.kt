@@ -1,5 +1,7 @@
 package com.example.project.ui.screens.login
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,15 +15,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.project.R
 import com.example.project.ui.screens.login.components.LoginButton
 import com.example.project.ui.screens.login.components.LoginEmailField
 import com.example.project.ui.screens.login.components.LoginPasswordField
 import com.example.project.ui.theme.LightBlue
 import com.example.project.ui.theme.TextSecondary
 import com.example.project.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun LoginScreen(
@@ -30,6 +37,32 @@ fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val state by viewModel.loginState.collectAsState()
+    val context = LocalContext.current
+
+    // Google Sign-In client
+    val googleSignInClient = remember {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    val googleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            account.idToken?.let { idToken ->
+                viewModel.onGoogleSignIn(
+                    idToken      = idToken,
+                    displayName  = account.displayName,
+                    email        = account.email
+                )
+            }
+        } catch (_: ApiException) { /* sign-in cancelled or failed */ }
+    }
 
     LaunchedEffect(state.navigateToHome) {
         if (state.navigateToHome) {
@@ -40,13 +73,11 @@ fun LoginScreen(
 
     if (state.showForgotDialog) {
         ForgotPasswordDialog(
-            email           = state.forgotEmail,
-            newPassword     = state.forgotNewPassword,
-            error           = state.forgotError,
-            onEmailChange   = viewModel::onForgotEmailChange,
-            onPasswordChange= viewModel::onForgotNewPasswordChange,
-            onSubmit        = viewModel::onForgotPasswordSubmit,
-            onDismiss       = viewModel::onForgotPasswordDismiss
+            email         = state.forgotEmail,
+            error         = state.forgotError,
+            onEmailChange = viewModel::onForgotEmailChange,
+            onSubmit      = viewModel::onForgotPasswordSubmit,
+            onDismiss     = viewModel::onForgotPasswordDismiss
         )
     }
 
@@ -74,7 +105,7 @@ fun LoginScreen(
         if (state.forgotSuccess) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                "Password reset successfully!",
+                "Password reset email sent! Check your inbox.",
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -113,6 +144,33 @@ fun LoginScreen(
 
         LoginButton(onClick = viewModel::onLoginClick, enabled = state.isLoginEnabled)
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ── OR divider ────────────────────────────────────────────────────────
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HorizontalDivider(modifier = Modifier.weight(1f))
+            Text(
+                "  OR  ",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+            HorizontalDivider(modifier = Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ── Google Sign-In button ─────────────────────────────────────────────
+        OutlinedButton(
+            onClick = { googleLauncher.launch(googleSignInClient.signInIntent) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isLoading
+        ) {
+            Text("Continue with Google", fontWeight = FontWeight.SemiBold)
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -129,10 +187,8 @@ fun LoginScreen(
 @Composable
 private fun ForgotPasswordDialog(
     email: String,
-    newPassword: String,
     error: String?,
     onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -141,20 +197,16 @@ private fun ForgotPasswordDialog(
         title = { Text("Reset Password") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Enter your email and a new password.",
-                    style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                Text(
+                    "Enter your email — we'll send a reset link.",
+                    style = MaterialTheme.typography.bodySmall, color = TextSecondary
+                )
                 OutlinedTextField(
                     value = email,
                     onValueChange = onEmailChange,
                     label = { Text("Email") },
                     singleLine = true,
                     isError = error != null
-                )
-                OutlinedTextField(
-                    value = newPassword,
-                    onValueChange = onPasswordChange,
-                    label = { Text("New password (min 6 chars)") },
-                    singleLine = true
                 )
                 if (error != null) {
                     Text(error, color = MaterialTheme.colorScheme.error,
@@ -163,7 +215,7 @@ private fun ForgotPasswordDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onSubmit) { Text("Reset") }
+            TextButton(onClick = onSubmit) { Text("Send Reset Email") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }

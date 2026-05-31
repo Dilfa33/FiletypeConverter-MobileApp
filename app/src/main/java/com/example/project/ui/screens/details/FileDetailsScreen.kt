@@ -1,5 +1,7 @@
 package com.example.project.ui.screens.details
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -123,6 +126,7 @@ private fun FileDetailsBody(
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val statusLabel = when (file.status) {
         ConversionStatus.SUCCESS    -> "Success"
         ConversionStatus.FAILED     -> "Failed"
@@ -171,12 +175,35 @@ private fun FileDetailsBody(
 
         OutlinedButton(
             onClick = {
-                scope.launch {
-                    snackbarHostState.showSnackbar("${file.name} saved to Downloads")
+                val outputPath = file.outputPath
+                if (outputPath != null) {
+                    // Open the real converted file
+                    val fileUri = Uri.parse(outputPath)
+                    val mimeType = when (file.targetFormat.uppercase()) {
+                        "JPG", "JPEG" -> "image/jpeg"
+                        "PNG"  -> "image/png"
+                        "WEBP" -> "image/webp"
+                        "PDF"  -> "application/pdf"
+                        "TXT"  -> "text/plain"
+                        "MP3"  -> "audio/mpeg"
+                        "MP4"  -> "video/mp4"
+                        else   -> "application/octet-stream"
+                    }
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(fileUri, mimeType)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    try {
+                        context.startActivity(intent)
+                    } catch (_: Exception) {
+                        scope.launch { snackbarHostState.showSnackbar("No app found to open this file") }
+                    }
+                } else {
+                    scope.launch { snackbarHostState.showSnackbar("File saved to Downloads/FileCast") }
                 }
             },
             modifier = Modifier.fillMaxWidth()
-        ) { Text("Download File") }
+        ) { Text("Open Downloaded File") }
 
         Spacer(modifier = Modifier.height(8.dp))
     }

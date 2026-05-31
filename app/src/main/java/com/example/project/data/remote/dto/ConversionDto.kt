@@ -27,3 +27,9 @@ data class UpdateConversionDto(
     val date: String? = null,
     val status: String? = null
 )
+
+/** Response from POST /convert/ — download URL for the CloudConvert output file. */
+data class ConvertResponseDto(
+    val downloadUrl: String,
+    val fileName: String
+)

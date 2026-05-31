@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.google.firebase.auth.FirebaseAuth
 import com.example.project.ui.screens.details.FileDetailsScreen
 import com.example.project.ui.screens.history.HistoryScreen
 import com.example.project.ui.screens.login.LoginScreen
@@ -15,9 +16,15 @@ import com.example.project.ui.screens.upload.UploadScreen
 
 @Composable
 fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
+    // Persistent login — skip Login screen if Firebase session is still active
+    val startDestination = if (FirebaseAuth.getInstance().currentUser != null)
+        BottomNavItem.Upload.route
+    else
+        AppRoutes.LOGIN
+
     NavHost(
         navController = navController,
-        startDestination = AppRoutes.LOGIN,
+        startDestination = startDestination,
         modifier = modifier
     ) {
         composable(AppRoutes.LOGIN) {
@@ -55,7 +62,13 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
             )
         }
         composable(BottomNavItem.Profile.route) {
-            ProfileScreen()
+            ProfileScreen(
+                onLogout = {
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
         composable(AppRoutes.CONVERSION_RESULT) { backStackEntry ->
             val fileName = backStackEntry.arguments?.getString("fileName").orEmpty()

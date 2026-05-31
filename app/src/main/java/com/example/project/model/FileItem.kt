@@ -7,7 +7,8 @@ data class FileItem(
     val targetFormat: String,
     val sizeMb: Float,
     val date: String,
-    val status: ConversionStatus
+    val status: ConversionStatus,
+    val outputPath: String? = null   // MediaStore URI of the converted file in Downloads
 )
 
 enum class ConversionStatus {

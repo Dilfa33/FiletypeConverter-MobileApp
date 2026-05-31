@@ -1,14 +1,19 @@
 package com.example.project.data.remote.api
 
 import com.example.project.data.remote.dto.ConversionDto
+import com.example.project.data.remote.dto.ConvertResponseDto
 import com.example.project.data.remote.dto.CreateConversionDto
 import com.example.project.data.remote.dto.UpdateConversionDto
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 
 interface FileCastApiService {
@@ -42,4 +47,13 @@ interface FileCastApiService {
         @Path("id") id: String,
         @Header("X-Authentication") authHeader: String = "yes"
     )
+
+    /** Send a file to the FastAPI /convert/ endpoint which proxies CloudConvert. */
+    @Multipart
+    @POST("convert/")
+    suspend fun convertFile(
+        @Part file: MultipartBody.Part,
+        @Part("targetFormat") targetFormat: RequestBody,
+        @Header("X-Authentication") authHeader: String = "yes"
+    ): ConvertResponseDto
 }
